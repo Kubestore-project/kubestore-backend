@@ -1,22 +1,20 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ConflictException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User, UserRole } from './user.entity';
 import * as bcrypt from 'bcrypt';
+import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly databaseService: DatabaseService
   ) {}
 
   async registration(email: string, password: string, phone_number: string) {
     try {
-      const user = await this.userRepository.findOne({ where: { email } });
+      const user = await this.databaseService.findUserByEmail(email);
 
       if (user) {
-        // throw new error
+        throw new ConflictException('User already exists');
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
@@ -27,7 +25,7 @@ export class UsersService {
       newUser.phone_number = phone_number;
       newUser.role = UserRole.USER;
 
-      return this.userRepository.save(newUser);
+      return this.databaseService.saveUser(newUser);
     } catch (e) {
       console.log(e);
     }
