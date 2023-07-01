@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, UsePipes, ValidationPipe } from '@nestjs/common';
 import { RegistrationUserDto } from './registrationUserDto';
 import { UsersService } from './users.service';
 
@@ -7,6 +7,7 @@ export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
   @Post('registration')
+  @UsePipes(ValidationPipe)
   async registration(@Body() registrationUserDto: RegistrationUserDto) {
     const { email, phone_number, password } = registrationUserDto;
 

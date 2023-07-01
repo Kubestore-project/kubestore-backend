@@ -1,4 +1,4 @@
-import { ConflictException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { User, UserRole } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { DatabaseService } from 'src/database/database.service';
@@ -14,7 +14,7 @@ export class UsersService {
       const user = await this.databaseService.findUserByEmail(email);
 
       if (user) {
-        throw new ConflictException('User already exists');
+        return new ConflictException('User already exists');
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
