@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, CreateDateColumn } from 'typeorm';
 import { BaseEntity } from 'src/base_entity';
 
 export enum UserRole {
@@ -8,6 +8,12 @@ export enum UserRole {
 
 @Entity('Users')
 export class User extends BaseEntity {
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @CreateDateColumn()
+  updatedAt: Date;
+
   @Column({ unique: true, type: 'varchar', length: 100, nullable: false })
   email: string;
 
@@ -19,4 +25,7 @@ export class User extends BaseEntity {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
+
+  @Column({ type: 'varchar', length: 250 })
+  refreshToken: string;
 }
