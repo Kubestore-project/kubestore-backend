@@ -9,18 +9,14 @@ import { LoginUserDto } from 'src/user/dto/login-user.dto';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { User } from 'src/user/user.entity';
+import { TokensService } from 'src/tokens/tokens.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
-    private jwtService: JwtService,
+    private readonly tokenService: TokensService,
   ) {}
-
-  async login(userDto: LoginUserDto) {
-    const user = await this.validateUser(userDto);
-    return this.generateToken(user);
-  }
 
   async registration(userDto: CreateUserDto) {
     const candidate = await this.userService.getUserByEmail(userDto.email);
@@ -36,13 +32,26 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    return this.generateToken(user);
+    // const accessToken = await this.tokenService.generateAccessToken(user);
+    // const refreshToken = await this.tokenService.generateRefreshToken(user);
+    // await this.tokenService.saveRefreshToken(refreshToken, user);
+
+    // return {
+    //   accessToken: accessToken,
+    //   refreshToken: refreshToken,
+    // };
+    return user;
   }
 
-  private async generateToken(user: User) {
-    const payload = { id: user.id, email: user.email };
+  async login(userDto: LoginUserDto) {
+    const user = await this.validateUser(userDto);
+    const accessToken = await this.tokenService.generateAccessToken(user);
+    const refreshToken = await this.tokenService.generateRefreshToken(user);
+    await this.tokenService.saveRefreshToken(refreshToken, user);
+
     return {
-      token: this.jwtService.sign(payload),
+      accessToken: accessToken,
+      refreshToken: refreshToken,
     };
   }
 
