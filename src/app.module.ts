@@ -3,9 +3,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { TokensModule } from './tokens/tokens.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AtGuard } from './common/guards';
 
 @Module({
   imports: [
@@ -22,11 +24,17 @@ import { TokensModule } from './tokens/tokens.module';
       synchronize: true,
       entities: ['dist/**/*.entity{.ts,.js}'],
     }),
-    UserModule,
     AuthModule,
+    UsersModule,
     TokensModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: AtGuard,
+    },
+  ],
 })
 export class AppModule {}

@@ -1,21 +1,51 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { LoginUserDto } from 'src/user/dto/login-user.dto';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { LoginDto, RegisterDto } from './dto';
+import { Tokens } from './types';
+import { RtGuard } from 'src/common/guards';
+import {
+  GetCurrentUser,
+  GetCurrentUserId,
+  Public,
+} from 'src/common/decorators';
 
-@ApiTags('Authorization')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @Post('login')
-  login(@Body() userDto: LoginUserDto) {
-    return this.authService.login(userDto);
+  @Public()
+  @Post('local/register')
+  register(@Body() dto: RegisterDto): Promise<Tokens> {
+    return this.authService.register(dto);
   }
 
-  @Post('registration')
-  registration(@Body() userDto: CreateUserDto) {
-    return this.authService.registration(userDto);
+  @Public()
+  @Post('local/login')
+  login(@Body() dto: LoginDto): Promise<Tokens> {
+    return this.authService.login(dto);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  logout(@GetCurrentUserId() userId: number) {
+    return this.authService.logout(userId);
+  }
+
+  @Public()
+  @UseGuards(RtGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  refreshTokens(
+    @GetCurrentUserId() userId: number,
+    @GetCurrentUser('refreshToken') refreshToken: string,
+  ) {
+    return this.authService.refreshTokens(userId, refreshToken);
   }
 }

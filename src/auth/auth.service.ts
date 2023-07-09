@@ -1,76 +1,59 @@
-import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { LoginUserDto } from 'src/user/dto/login-user.dto';
-import { UserService } from 'src/user/user.service';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { LoginDto, RegisterDto } from './dto';
+import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
-import { User } from 'src/user/user.entity';
+import { Tokens } from './types';
 import { TokensService } from 'src/tokens/tokens.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private userService: UserService,
+    private readonly userService: UsersService,
     private readonly tokenService: TokensService,
   ) {}
 
-  async registration(userDto: CreateUserDto) {
-    const candidate = await this.userService.getUserByEmail(userDto.email);
-
-    if (candidate) {
-      throw new ConflictException('User already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(userDto.password, 5);
+  async register(dto: RegisterDto): Promise<Tokens> {
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     const user = await this.userService.createUser({
-      ...userDto,
+      ...dto,
       password: hashedPassword,
     });
 
-    // const accessToken = await this.tokenService.generateAccessToken(user);
-    // const refreshToken = await this.tokenService.generateRefreshToken(user);
-    // await this.tokenService.saveRefreshToken(refreshToken, user);
+    const tokens = await this.tokenService.getTokens(user.id, user.email);
+    await this.tokenService.updateRefreshToken(user.id, tokens.refreshToken);
 
-    // return {
-    //   accessToken: accessToken,
-    //   refreshToken: refreshToken,
-    // };
-    return user;
+    return tokens;
   }
 
-  async login(userDto: LoginUserDto) {
-    const user = await this.validateUser(userDto);
-    const accessToken = await this.tokenService.generateAccessToken(user);
-    const refreshToken = await this.tokenService.generateRefreshToken(user);
-    await this.tokenService.saveRefreshToken(refreshToken, user);
-
-    return {
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    };
+  async login(dto: LoginDto): Promise<Tokens> {
+    const user = await this.userService.validateUser(dto);
+    const tokens = await this.tokenService.getTokens(user.id, user.email);
+    await this.tokenService.updateRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 
-  private async validateUser(userDto: LoginUserDto) {
-    const user = await this.userService.getUserByEmail(userDto.email);
+  async logout(userId: number) {
+    return await this.tokenService.deleteRefreshToken(userId);
+  }
 
-    if (user) {
-      const passwordMatches = await bcrypt.compare(
-        userDto.password,
-        user.password,
-      );
+  async refreshTokens(userId: number, rt: string) {
+    const user = await this.userService.getUserById(userId);
 
-      if (passwordMatches) {
-        return user;
-      } else {
-        throw new UnauthorizedException('Incorrect email or password');
-      }
-    } else {
-      throw new UnauthorizedException('User not registered');
-    }
+    const refreshToken = await this.tokenService.findRefreshTokenByUserId(
+      userId,
+    );
+
+    if (!refreshToken)
+      throw new UnauthorizedException('refreshToken not registered'); // TODO: Think about error
+
+    const rtMatches = await bcrypt.compare(rt, refreshToken.refreshToken);
+
+    if (!rtMatches)
+      throw new UnauthorizedException('refreshToken not registered'); // TODO: Think about error
+
+    const tokens = await this.tokenService.getTokens(user.id, user.email);
+    await this.tokenService.updateRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 }
