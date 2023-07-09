@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { LoginDto, RegisterDto } from './dto';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
@@ -13,15 +17,19 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<Tokens> {
+    const user = await this.userService.getUserByEmail(dto.email);
+
+    if (user) throw new ConflictException('User already registered');
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const user = await this.userService.createUser({
+    const newUser = await this.userService.createUser({
       ...dto,
       password: hashedPassword,
     });
 
-    const tokens = await this.tokenService.getTokens(user.id, user.email);
-    await this.tokenService.updateRefreshToken(user.id, tokens.refreshToken);
+    const tokens = await this.tokenService.getTokens(newUser.id, newUser.email);
+    await this.tokenService.updateRefreshToken(newUser.id, tokens.refreshToken);
 
     return tokens;
   }

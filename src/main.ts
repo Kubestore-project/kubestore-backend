@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import { AtGuard } from './common/guards';
 
 async function bootstrap() {
   const PORT = process.env.PORT || 8000;
@@ -12,9 +11,15 @@ async function bootstrap() {
     .setTitle('Kubestore backend')
     .setDescription('REST API Documentation')
     .setVersion('1.0.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'Token' },
+      'jwt',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('/api/docs', app, document);
+  SwaggerModule.setup('/api/docs', app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 
   app.useGlobalPipes(new ValidationPipe());
 

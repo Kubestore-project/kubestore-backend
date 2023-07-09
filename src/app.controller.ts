@@ -1,12 +1,13 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-import { AuthGuard } from '@nestjs/passport';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @Controller('api')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @UseGuards(AuthGuard('jwt'))
+  @ApiTags('Test authorization request')
+  @ApiOperation({ summary: 'Test authorization request' })
   @Get()
   getHello(): string {
     return this.appService.getHello();
