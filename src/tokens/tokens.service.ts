@@ -20,6 +20,7 @@ export class TokensService {
         {
           id: userId,
           email: email,
+          role: 'user',
         },
         {
           secret: process.env.PRIVATE_ACCESS_KEY || 'SECRET_ACCESS',
@@ -30,6 +31,7 @@ export class TokensService {
         {
           id: userId,
           email: email,
+          role: 'user',
         },
         {
           secret: process.env.PRIVATE_REFRESH_KEY || 'SECRET_REFRESH',

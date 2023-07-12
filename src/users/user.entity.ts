@@ -18,7 +18,7 @@ export class User extends BaseEntity {
   password: string;
 
   @ApiProperty({ example: '+380969022285', description: 'User mobile phone' })
-  @Column({ type: 'varchar', length: 20 }) // uniq? nullable?
+  @Column({ type: 'varchar', length: 20 })
   phoneNumber: string;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
